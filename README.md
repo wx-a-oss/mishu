@@ -147,43 +147,100 @@ mishu/
             └── useWebSocket.js  # WebSocket connection + state
 ```
 
-## Deployment
+## Deployment (Mac Mini)
 
-### Production (Single Server)
+Mishu is designed to run as an always-on service on a Mac Mini, with automatic deploys from GitHub.
 
-```bash
-cd frontend && npm run build && cd ..
-uvicorn backend.main:app --host 0.0.0.0 --port 8000
-```
-
-The backend auto-serves the built frontend at http://localhost:8000.
-
-### Docker
+### First-Time Setup
 
 ```bash
-docker build -t mishu .
-docker run -p 8000:8000 --env-file .env -v ./credentials.json:/app/credentials.json mishu
+# On your Mac Mini
+git clone https://github.com/YOUR_USER/mishu.git ~/mishu
+cd ~/mishu
+./scripts/setup.sh
 ```
 
-> **Note:** Desktop automation (PyAutoGUI) requires a display server and won't work in a headless container. Browser automation works in headless mode.
+This creates a Python venv, installs all dependencies, builds the frontend, and installs a launchd service that keeps Mishu running (auto-restarts on crash, starts on boot).
 
-### systemd
+After setup, edit your config:
 
-```ini
-[Unit]
-Description=Mishu AI Agent
-After=network.target
+```bash
+nano ~/mishu/.env               # Add OPENAI_API_KEY
+nano ~/mishu/credentials.json   # Add website credentials
+```
 
-[Service]
-Type=simple
-User=your-user
-WorkingDirectory=/path/to/mishu
-ExecStart=/path/to/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
-Restart=always
-EnvironmentFile=/path/to/mishu/.env
+### CI/CD — Auto-Deploy on Push
 
-[Install]
-WantedBy=multi-user.target
+Every push to `main` automatically deploys to your Mac Mini via a GitHub Actions self-hosted runner.
+
+#### 1. Create GitHub repo and push
+
+```bash
+cd ~/mishu
+git remote add origin https://github.com/YOUR_USER/mishu.git
+git push -u origin main
+```
+
+#### 2. Install self-hosted runner on Mac Mini
+
+Go to your GitHub repo → **Settings** → **Actions** → **Runners** → **New self-hosted runner**.
+
+Select **macOS**, then run the commands GitHub gives you:
+
+```bash
+# Download (GitHub gives you the exact URL)
+mkdir ~/actions-runner && cd ~/actions-runner
+curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.XXX.X/actions-runner-osx-x64-2.XXX.X.tar.gz
+tar xzf actions-runner.tar.gz
+
+# Configure
+./config.sh --url https://github.com/YOUR_USER/mishu --token YOUR_TOKEN
+
+# Install as a launchd service (starts on boot)
+./svc.sh install
+./svc.sh start
+```
+
+#### 3. Set the MISHU_DIR environment variable
+
+The runner needs to know where your repo lives. On the Mac Mini:
+
+```bash
+# Create a .env file for the runner
+echo "MISHU_DIR=$HOME/mishu" >> ~/actions-runner/.env
+```
+
+#### 4. Done
+
+Now every push to `main` will:
+1. Trigger the GitHub Actions workflow
+2. The self-hosted runner on your Mac Mini picks it up
+3. Pulls latest code, installs deps, rebuilds frontend
+4. Restarts the Mishu launchd service
+5. Runs a health check to confirm it's live
+
+#### Manual deploy (if needed)
+
+```bash
+cd ~/mishu
+./scripts/deploy.sh
+```
+
+### Service Management
+
+```bash
+# View status
+launchctl list | grep mishu
+
+# Stop
+launchctl unload ~/Library/LaunchAgents/com.mishu.agent.plist
+
+# Start
+launchctl load ~/Library/LaunchAgents/com.mishu.agent.plist
+
+# View logs
+tail -f ~/mishu/logs/mishu.stdout.log
+tail -f ~/mishu/logs/mishu.stderr.log
 ```
 
 ## Extending

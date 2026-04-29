@@ -1,0 +1,40 @@
+name: Deploy to Mac Mini
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Pull latest code
+        run: |
+          cd "${MISHU_DIR:-$HOME/mishu}"
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Install Python dependencies
+        run: |
+          cd "${MISHU_DIR:-$HOME/mishu}"
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Install frontend dependencies and build
+        run: |
+          cd "${MISHU_DIR:-$HOME/mishu}/frontend"
+          npm install
+          npm run build
+
+      - name: Restart Mishu service
+        run: |
+          launchctl unload ~/Library/LaunchAgents/com.mishu.agent.plist 2>/dev/null || true
+          sleep 2
+          launchctl load ~/Library/LaunchAgents/com.mishu.agent.plist
+
+      - name: Health check
+        run: |
+          sleep 5
+          curl -sf http://localhost:8000/health || (echo "Health check failed!" && exit 1)
+          echo "Mishu is running and healthy."

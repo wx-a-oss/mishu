@@ -158,77 +158,71 @@ Each site entry requires:
 
 ---
 
-## Deployment
+## Deployment (Mac Mini)
 
-### Production Build (Frontend)
-
-```bash
-cd frontend
-npm run build
-```
-
-This outputs static files to `frontend/dist/`. The FastAPI backend auto-serves them if this directory exists.
-
-### Production Run (Single Server)
+### First-Time Setup
 
 ```bash
-# Build frontend first
-cd frontend && npm run build && cd ..
-
-# Run backend (serves both API and frontend)
-uvicorn backend.main:app --host 0.0.0.0 --port 8000
+git clone https://github.com/YOUR_USER/mishu.git ~/mishu
+cd ~/mishu
+./scripts/setup.sh
 ```
 
-Open http://localhost:8000.
+The setup script:
+1. Creates a Python venv and installs dependencies
+2. Installs Playwright Chromium
+3. Builds the React frontend
+4. Creates `.env` and `credentials.json` from templates
+5. Generates and installs a launchd plist at `~/Library/LaunchAgents/com.mishu.agent.plist`
+6. Starts the Mishu service
 
-### Run with Process Manager (systemd example)
-
-Create `/etc/systemd/system/mishu.service`:
-
-```ini
-[Unit]
-Description=Mishu AI Agent
-After=network.target
-
-[Service]
-Type=simple
-User=your-user
-WorkingDirectory=/path/to/mishu
-ExecStart=/path/to/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port 8000
-Restart=always
-EnvironmentFile=/path/to/mishu/.env
-
-[Install]
-WantedBy=multi-user.target
+After setup, edit your config:
+```bash
+nano ~/mishu/.env              # Add OPENAI_API_KEY
+nano ~/mishu/credentials.json  # Add real website credentials
 ```
+
+### CI/CD — Auto-Deploy on Push
+
+Uses a GitHub Actions self-hosted runner on the Mac Mini.
+
+**Setup steps:**
+
+1. Push repo to GitHub
+2. Go to repo → Settings → Actions → Runners → New self-hosted runner (macOS)
+3. Follow GitHub's commands on your Mac Mini to install the runner
+4. Install the runner as a service: `./svc.sh install && ./svc.sh start`
+5. Set the deploy path: `echo "MISHU_DIR=$HOME/mishu" >> ~/actions-runner/.env`
+
+**What happens on each push to `main`:**
+1. GitHub Actions workflow triggers
+2. Self-hosted runner on Mac Mini picks up the job
+3. Pulls latest code via `git fetch + reset --hard`
+4. Installs Python deps, rebuilds frontend
+5. Restarts the launchd service
+6. Runs health check on `http://localhost:8000/health`
+
+**Workflow file:** `.github/workflows/deploy.yml`
+**Manual deploy:** `./scripts/deploy.sh`
+
+### Service Management (launchd)
 
 ```bash
-sudo systemctl enable mishu
-sudo systemctl start mishu
+# View status
+launchctl list | grep mishu
+
+# Stop
+launchctl unload ~/Library/LaunchAgents/com.mishu.agent.plist
+
+# Start
+launchctl load ~/Library/LaunchAgents/com.mishu.agent.plist
+
+# View logs
+tail -f ~/mishu/logs/mishu.stdout.log
+tail -f ~/mishu/logs/mishu.stderr.log
 ```
 
-### Docker (Optional)
-
-```dockerfile
-FROM python:3.12-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && playwright install chromium --with-deps
-
-COPY . .
-RUN cd frontend && npm install && npm run build
-
-EXPOSE 8000
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-```bash
-docker build -t mishu .
-docker run -p 8000:8000 --env-file .env -v ./credentials.json:/app/credentials.json mishu
-```
-
-Note: Desktop automation (PyAutoGUI) requires a display server and does not work inside a headless Docker container. Browser automation (Playwright) works in headless mode.
+The service auto-starts on boot and auto-restarts on crash (KeepAlive = true).
 
 ---
 
