@@ -11,19 +11,19 @@ jobs:
     steps:
       - name: Pull latest code
         run: |
-          cd "${MISHU_DIR:-$HOME/mishu}"
+          cd "${MISHU_DIR:-$HOME/Documents/mishu}"
           git fetch origin main
           git reset --hard origin/main
 
       - name: Install Python dependencies
         run: |
-          cd "${MISHU_DIR:-$HOME/mishu}"
+          cd "${MISHU_DIR:-$HOME/Documents/mishu}"
           source venv/bin/activate
           pip install -r requirements.txt
 
       - name: Install frontend dependencies and build
         run: |
-          cd "${MISHU_DIR:-$HOME/mishu}/frontend"
+          cd "${MISHU_DIR:-$HOME/Documents/mishu}/frontend"
           npm install
           npm run build
 

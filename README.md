@@ -155,8 +155,8 @@ Mishu is designed to run as an always-on service on a Mac Mini, with automatic d
 
 ```bash
 # On your Mac Mini
-git clone https://github.com/YOUR_USER/mishu.git ~/mishu
-cd ~/mishu
+git clone https://github.com/YOUR_USER/mishu.git ~/Documents/mishu
+cd ~/Documents/mishu
 ./scripts/setup.sh
 ```
 
@@ -165,8 +165,8 @@ This creates a Python venv, installs all dependencies, builds the frontend, and 
 After setup, edit your config:
 
 ```bash
-nano ~/mishu/.env               # Add OPENAI_API_KEY
-nano ~/mishu/credentials.json   # Add website credentials
+nano ~/Documents/mishu/.env               # Add OPENAI_API_KEY
+nano ~/Documents/mishu/credentials.json   # Add website credentials
 ```
 
 ### CI/CD — Auto-Deploy on Push
@@ -176,7 +176,7 @@ Every push to `main` automatically deploys to your Mac Mini via a GitHub Actions
 #### 1. Create GitHub repo and push
 
 ```bash
-cd ~/mishu
+cd ~/Documents/mishu
 git remote add origin https://github.com/YOUR_USER/mishu.git
 git push -u origin main
 ```
@@ -207,7 +207,7 @@ The runner needs to know where your repo lives. On the Mac Mini:
 
 ```bash
 # Create a .env file for the runner
-echo "MISHU_DIR=$HOME/mishu" >> ~/actions-runner/.env
+echo "MISHU_DIR=$HOME/Documents/mishu" >> ~/actions-runner/.env
 ```
 
 #### 4. Done
@@ -222,7 +222,7 @@ Now every push to `main` will:
 #### Manual deploy (if needed)
 
 ```bash
-cd ~/mishu
+cd ~/Documents/mishu
 ./scripts/deploy.sh
 ```
 
@@ -239,8 +239,8 @@ launchctl unload ~/Library/LaunchAgents/com.mishu.agent.plist
 launchctl load ~/Library/LaunchAgents/com.mishu.agent.plist
 
 # View logs
-tail -f ~/mishu/logs/mishu.stdout.log
-tail -f ~/mishu/logs/mishu.stderr.log
+tail -f ~/Documents/mishu/logs/mishu.stdout.log
+tail -f ~/Documents/mishu/logs/mishu.stderr.log
 ```
 
 ## Extending
