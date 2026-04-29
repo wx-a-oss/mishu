@@ -22,8 +22,8 @@ cd frontend && npm install
 ### 2. Configure
 
 ```bash
-cp .env.example .env
-cp credentials.json.example credentials.json
+cp .env.template .env
+cp credentials.json.template credentials.json
 ```
 
 Edit `.env`:

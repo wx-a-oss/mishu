@@ -34,14 +34,14 @@ npm run build
 # 4. Create .env if it doesn't exist
 if [ ! -f "$PROJECT_DIR/.env" ]; then
     echo "==> Creating .env from template..."
-    cp "$PROJECT_DIR/.env.example" "$PROJECT_DIR/.env"
+    cp "$PROJECT_DIR/.env.template" "$PROJECT_DIR/.env"
     echo "    ** IMPORTANT: Edit .env and add your OPENAI_API_KEY **"
 fi
 
 # 5. Create credentials.json if it doesn't exist
 if [ ! -f "$PROJECT_DIR/credentials.json" ]; then
     echo "==> Creating credentials.json from template..."
-    cp "$PROJECT_DIR/credentials.json.example" "$PROJECT_DIR/credentials.json"
+    cp "$PROJECT_DIR/credentials.json.template" "$PROJECT_DIR/credentials.json"
     echo "    ** IMPORTANT: Edit credentials.json with real credentials **"
 fi
 
